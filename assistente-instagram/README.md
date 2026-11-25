@@ -78,7 +78,23 @@ responder conversas passadas.
 
 O webhook será configurado no passo 4, quando o endereço HTTPS já estiver no ar.
 
-## 2. Instalar na VPS sem afetar a aplicação existente
+## Instalação rápida (para leigos)
+
+1. No hPanel da Hostinger, abra **VPS > Gerenciar**. O **IP** da VPS aparece na tela de visão geral
+   (algo como `123.45.67.89`). Clique em **Terminal do navegador** (ou "Browser terminal").
+2. Cole este comando e aperte Enter:
+   ```bash
+   bash <(curl -fsSL https://raw.githubusercontent.com/tionaza/InstaPy/claude/project-thread-g0qv50/assistente-instagram/instalar.sh)
+   ```
+3. Digite o usuário e a senha do Instagram quando ele pedir.
+4. No final ele mostra o endereço (ex.: `http://123.45.67.89:8090`), o usuário e a senha do painel.
+   Abra esse endereço no navegador.
+
+Se a página não abrir, libere a porta mostrada no **Firewall** da VPS no hPanel (regra TCP de
+entrada). Esse acesso por IP não tem cadeado (HTTP); depois vale configurar um subdomínio com HTTPS
+(passo 3 abaixo).
+
+## 2. Instalar na VPS sem afetar a aplicação existente (manual)
 
 Acesse por SSH (`ssh root@IP_DA_VPS`, IP no hPanel da Hostinger).
 
