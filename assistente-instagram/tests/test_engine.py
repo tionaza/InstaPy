@@ -116,7 +116,7 @@ def test_fluxo_webhook(app_env):
         }
         assert client.get("/").status_code == 401
         assert client.get("/", auth=("admin", "senha")).status_code == 200
-        for p in ("/regras", "/radar", "/configuracoes"):
+        for p in ("/regras", "/radar", "/configuracoes", "/robo"):
             assert client.get(p, auth=("admin", "senha")).status_code == 200
         assert (
             client.post(

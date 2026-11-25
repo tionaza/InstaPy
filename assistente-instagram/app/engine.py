@@ -38,6 +38,15 @@ def match_rule(text: str, channel: str, rules: list[dict]) -> str | None:
     return None
 
 
+def ai_context(cfg: dict) -> str:
+    """Instruções + perfil de voz (padrão das skills voice-builder/post-writer)."""
+    return cfg.get(
+        "contexto_ia", ""
+    ) + "\n\nPerfil e voz de quem escreve (siga à risca, não invente fatos, " "números ou experiências):\n" + cfg.get(
+        "perfil_voz", ""
+    )
+
+
 def build_reply(kind: str, text: str) -> tuple[str, str]:
     """Retorna (texto, origem)."""
     cfg = get_config()
@@ -48,7 +57,7 @@ def build_reply(kind: str, text: str) -> tuple[str, str]:
     if hit:
         return hit, "regra"
     if cfg.get("usar_ia") == "1":
-        s = ai.suggest(cfg.get("contexto_ia", ""), channel, text)
+        s = ai.suggest(ai_context(cfg), channel, text)
         if s:
             return s, "ia"
     return cfg[f"resposta_padrao_{channel}"], "padrao"
@@ -67,9 +76,13 @@ def execute(action_id: int) -> str:
         a = dict(c.execute("SELECT * FROM actions WHERE id=?", (action_id,)).fetchone())
     status, error = "enviado", None
     try:
+        from . import robo
+
         if settings.dry_run:
             log.info("[DRY_RUN] %s -> %s: %s", a["kind"], a["target_id"], a["text"])
             status = "simulado"
+        elif a["kind"] in robo.KINDS:
+            robo.perform(a)
         elif a["kind"] == "responder_comentario":
             graph.reply_to_comment(a["target_id"], a["text"])
         elif a["kind"] == "responder_direct":
@@ -86,9 +99,7 @@ def execute(action_id: int) -> str:
     return status
 
 
-def _queue(
-    event_id: int, kind: str, target: str, text: str, source: str, mode: str
-) -> None:
+def _queue(event_id, kind: str, target: str, text: str, source: str, mode: str) -> int:
     with db() as c:
         cur = c.execute(
             "INSERT INTO actions(event_id, kind, target_id, text, source) VALUES (?,?,?,?,?)",
@@ -97,6 +108,7 @@ def _queue(
         aid = cur.lastrowid
     if mode == "automatico" and _sent_last_hour() < settings.max_auto_per_hour:
         execute(aid)
+    return aid
 
 
 def _recently_answered(target: str, hours: int = 12) -> bool:

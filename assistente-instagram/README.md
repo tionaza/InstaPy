@@ -1,31 +1,65 @@
-# Assistente Instagram (API oficial da Meta)
+# Assistente Instagram
 
 Sistema para rodar numa VPS Hostinger **ao lado de uma aplicação que já existe**, sem mexer nela.
-Ele recebe os comentários e Directs da sua conta pelos webhooks oficiais da Meta e responde
-automaticamente (ou depois da sua aprovação), além de um **Radar** que acompanha hashtags e
-concorrentes para você interagir com esse público.
+Funciona em dois modos, que podem ser usados juntos:
+
+- **Robô (padrão):** entra na sua conta (login e senha) e, sozinho, coleta seguidores de
+  concorrentes e autores de posts de hashtags, curte e comenta nos perfis públicos, responde
+  comentários nos seus posts e responde Directs recebidos.
+- **API oficial (opcional):** webhooks da Meta para respostas instantâneas e radar oficial.
 
 | Função | Como funciona |
 |---|---|
-| Responder comentários nas suas publicações | Automático ou com aprovação, por regras de palavra-chave, resposta padrão ou IA |
-| Responder Directs recebidos | Idem, dentro da janela de 24h da Meta; não repete a resposta padrão na mesma conversa |
-| Direct para quem comentou | Opcional (resposta privada oficial, 1 por comentário) |
-| Radar de hashtags | Lista publicações recentes da hashtag com sugestão de comentário para você interagir pelo app |
-| Radar de concorrentes | Seguidores, posts e engajamento médio de perfis comerciais concorrentes, e as publicações deles |
-| Painel web | Fila de aprovação, histórico, regras, configurações, com usuário e senha |
+| Público-alvo | Seguidores de perfis concorrentes e autores de posts recentes de hashtags |
+| Curtir | Até N posts recentes de cada perfil público do público-alvo, com limite diário |
+| Comentar no público-alvo | Comentário gerado pela IA com a voz do escritório, ou modelos; com aprovação ou automático |
+| Responder comentários nos seus posts | Regras por palavra-chave, resposta padrão ou IA, marcando o @ da pessoa |
+| Responder Directs recebidos | Idem; a resposta padrão vai no máximo 1x por dia por conversa |
+| Painel web | Robô, fila de aprovação, histórico, regras, público-alvo, configurações |
 
-## Por que não curte/comenta/manda Direct sozinho para desconhecidos
+## Riscos (leia antes de ligar o robô)
 
-1. **Instagram:** robôs não oficiais (como o InstaPy deste repositório) violam os Termos de Uso, e a
-   Meta bloqueia ou desativa as contas com frequência. A API oficial não permite curtir, nem
-   comentar ou mandar Direct a quem não falou com você primeiro.
-2. **OAB:** o Código de Ética e o Provimento 205/2021 proíbem a captação de clientela e o envio
-   de mensagens não solicitadas em massa. Responder quem procurou o escritório é permitido; abordar
-   ativamente seguidores de concorrentes não é.
+1. **Instagram:** o robô usa a API privada do app (biblioteca `instagrapi`), o que viola os Termos de
+   Uso. Podem acontecer bloqueios de ação ("Action Blocked"), pedidos de verificação e, em casos
+   repetidos, desativação da conta. Login a partir de servidor (IP de datacenter) aumenta as
+   verificações.
+2. **OAB:** o Código de Ética e o Provimento 205/2021 vedam captação de clientela e mercantilização.
+   Por isso os comentários gerados são de conteúdo (sem oferecer serviços nem pedir contato), e o
+   robô **não manda Direct para quem nunca falou com o escritório**.
 
-Por isso o Radar entrega o público e a sugestão, e **você** interage manualmente, com naturalidade.
+Travas embutidas: limites diários (teto de 150 curtidas e 30 comentários), poucos perfis por ciclo,
+intervalos aleatórios entre ações, horário de funcionamento, pausa automática de 24h em qualquer
+bloqueio ou verificação, e comentários no público-alvo com aprovação por padrão.
 
-## 1. Preparar a Meta (uma vez)
+**Aquecimento sugerido:** semana 1 com 30 curtidas e 3 comentários por dia; semana 2 com 60 e 8;
+depois no máximo 100 e 15. Se aparecer pausa por bloqueio, volte um degrau.
+
+## Aplicação das skills do projeto
+
+- **voice-builder / post-writer** (`social-media-skills`): o campo *Perfil e voz do escritório* em
+  Configurações segue o formato `about-me.md` + `voice.md` dessas skills e vai em toda geração de
+  texto pela IA, com a regra delas de nunca inventar fatos, números ou experiências.
+- **Instagram Curator** (`agency-agents`): os comentários seguem a linha de "engajamento autêntico
+  de comunidade": comentários que acrescentam ao assunto, nada genérico, sem autopromoção.
+- Regra comum das skills, "rascunho não autoriza publicar": por isso existe a fila de aprovação.
+
+## 1. Configurar o robô
+
+No `.env` (passo 2): `IG_USERNAME`, `IG_PASSWORD` e, se usar app autenticador, `IG_TOTP_SECRET`.
+No painel:
+1. **Público-alvo:** cadastre perfis concorrentes (`@perfil`) e hashtags (`direitoprevidenciario`).
+2. **Configurações:** preencha *Perfil e voz*, modos de resposta e, se quiser, ligue a IA
+   (`ANTHROPIC_API_KEY`).
+3. **Robô:** clique em *Conectar conta*. Se o Instagram pedir código, digite e conecte de novo; se
+   pedir "Foi você?", confirme no celular. Ajuste os limites, marque *Robô ligado* e salve.
+4. Deixe `DRY_RUN=true` no primeiro dia: o robô lê tudo, mas curtidas, comentários e respostas
+   saem como "simulado". Confira o histórico e então mude para `false`.
+
+Na primeira execução o robô só marca como vistos os comentários e Directs antigos, para não
+responder conversas passadas.
+
+## 1b. (Opcional) API oficial da Meta
+
 
 1. A conta do Instagram precisa ser **Profissional (Empresa ou Criador)** e estar ligada a uma
    **Página do Facebook**.
@@ -91,7 +125,7 @@ sudo certbot --nginx -d insta.seudominio.com.br
 para `http://IP_INTERNO:8090` pelo painel da ferramenta, ou conecte o container à rede do proxy e
 adicione as labels dela. Se tiver dúvida, envie a saída do `ss -ltnp` e de `docker ps` que eu ajusto.
 
-## 4. Ligar o webhook
+## 4. (Opcional) Ligar o webhook da API oficial
 
 No app da Meta > Webhooks > objeto **Instagram**:
 - URL de callback: `https://insta.seudominio.com.br/webhook`
@@ -109,11 +143,12 @@ Comente numa publicação sua e mande um Direct de outra conta: os itens aparece
 
 ## Uso do painel
 
-- **Respostas:** fila de aprovação (edite o texto antes de enviar) e histórico.
+- **Robô:** status, conexão, limites, pausa e log de atividade.
+- **Fila e histórico:** fila de aprovação (edite o texto antes de enviar) e histórico.
 - **Regras:** palavras-chave e respostas, ex.: `aposentadoria, inss` → resposta sobre direito previdenciário.
 - **Configurações:** modo automático/aprovação/desligado por canal, respostas padrão, IA opcional.
   Recomendação: comece com **aprovação** e passe para automático só nas regras já testadas.
-- **Radar:** cadastre hashtags (`direitodotrabalho`) e perfis concorrentes (`@perfil`, precisa ser conta
+- **Público-alvo:** cadastre hashtags (`direitodotrabalho`) e perfis concorrentes (`@perfil`, precisa ser conta
   comercial ou de criador). Clique em "Abrir no Instagram", interaja pelo app e marque "Já interagi".
 
 ## Manutenção

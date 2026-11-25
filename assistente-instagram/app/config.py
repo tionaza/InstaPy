@@ -36,6 +36,14 @@ class Settings:
     anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
     anthropic_model = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
 
+    # Robô (modo não oficial, login direto na conta)
+    ig_username = os.getenv("IG_USERNAME", "")
+    ig_password = os.getenv("IG_PASSWORD", "")
+    ig_totp_secret = os.getenv("IG_TOTP_SECRET", "")
+    timezone = os.getenv("TZ", "America/Sao_Paulo")
+    robo_ciclo_min = int(os.getenv("ROBO_CICLO_MIN", "30"))
+    session_path = os.getenv("IG_SESSION_PATH", "/data/ig_session.json")
+
     db_path = os.getenv("DB_PATH", "/data/assistente.db")
 
 

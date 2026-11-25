@@ -1,5 +1,6 @@
 {% extends "base.html" %}{% block content %}
-<h3>Radar de público</h3>
+<h3>Público-alvo</h3>
+<p class="mut">As hashtags e concorrentes cadastrados aqui alimentam o <a href="/robo">Robô</a>: ele coleta seguidores dos concorrentes e autores de posts das hashtags, curte e comenta nos perfis públicos.</p>
 <p class="mut">Acompanha hashtags e perfis concorrentes pela API oficial. O sistema <b>não</b> curte nem comenta em perfis de terceiros: ele separa as publicações e sugere um comentário para você interagir manualmente pelo app, o que mantém a conta segura.</p>
 <form class="card row" method="post" action="/radar/fontes">
   <select name="kind"><option value="hashtag">Hashtag</option><option value="concorrente">Perfil concorrente (comercial/criador)</option></select>

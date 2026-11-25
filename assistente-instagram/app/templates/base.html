@@ -24,7 +24,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:6px;border-bottom:1px so
 </head>
 <body>
 <header><b>Assistente Instagram</b>
-<a href="/">Respostas</a><a href="/regras">Regras</a><a href="/radar">Radar</a><a href="/configuracoes">Configurações</a></header>
+<a href="/">Fila e histórico</a><a href="/robo">Robô</a><a href="/regras">Regras</a><a href="/radar">Público-alvo</a><a href="/configuracoes">Configurações</a></header>
 <main>
 {% if s.dry_run %}<div class="card warn"><b>Modo simulação ativo (DRY_RUN=true).</b> Nada é enviado ao Instagram; as ações aparecem como "simulado". Altere no .env quando estiver tudo testado.</div>{% endif %}
 {% block content %}{% endblock %}

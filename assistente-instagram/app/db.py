@@ -55,6 +55,21 @@ CREATE TABLE IF NOT EXISTS competitor_stats (
     avg_likes REAL, avg_comments REAL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS publico (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_pk TEXT UNIQUE, username TEXT, origem TEXT,
+    status TEXT NOT NULL DEFAULT 'novo',        -- novo | feito | privado | erro
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP, done_at TEXT
+);
+CREATE TABLE IF NOT EXISTS robo_vistos (
+    ref TEXT PRIMARY KEY,                       -- ids de comentários/mensagens já tratados
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS robo_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nivel TEXT, mensagem TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 DEFAULT_CONFIG = {
@@ -73,6 +88,30 @@ DEFAULT_CONFIG = {
         "informativa e sóbria. Não prometa resultados, não cite valores de honorários, "
         "não dê parecer jurídico sobre o caso concreto e convide a pessoa a continuar a "
         "conversa pelo Direct ou agendar atendimento."
+    ),
+    # --- robô (modo não oficial) ---
+    "robo_ativo": "0",
+    "robo_pausado_ate": "",
+    "robo_status": "não conectado",
+    "limite_curtidas_dia": "60",
+    "limite_comentarios_dia": "10",
+    "limite_perfis_ciclo": "8",
+    "curtidas_por_perfil": "2",
+    "chance_comentar": "30",  # % dos perfis visitados que recebem comentário
+    "modo_comentar_publico": "aprovacao",  # automatico | aprovacao | desligado
+    "hora_inicio": "8",
+    "hora_fim": "21",
+    "intervalo_min_s": "45",
+    "intervalo_max_s": "160",
+    "seguidores_por_concorrente": "100",
+    "modelos_comentario": (
+        "Conteúdo muito esclarecedor, obrigado por compartilhar!\n"
+        "Ótima explicação, muita gente tem essa dúvida.\n"
+        "Informação importante, vale a pena todo mundo saber disso."
+    ),
+    "perfil_voz": (
+        "Sobre: escritório Santos Nazaré Advocacia.\n"
+        "Voz: próxima, clara, sem juridiquês, frases curtas, sem emojis em excesso."
     ),
 }
 

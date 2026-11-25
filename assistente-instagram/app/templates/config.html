@@ -1,6 +1,9 @@
 {% extends "base.html" %}{% block content %}
 <h3>Configurações</h3>
 <form class="card" method="post">
+  <label><b>Perfil e voz do escritório</b></label>
+  <p class="mut">Usado pela IA em todas as respostas e comentários (método das skills voice-builder e post-writer do projeto): quem é o escritório, áreas de atuação, público, tom de voz, palavras que usa e que evita.</p>
+  <textarea name="perfil_voz" style="min-height:140px">{{ cfg.perfil_voz }}</textarea><br><br>
   {% for key, label in [('modo_comentario','Respostas a comentários'),('modo_direct','Respostas no Direct')] %}
   <label><b>{{ label }}</b></label>
   <select name="{{ key }}">

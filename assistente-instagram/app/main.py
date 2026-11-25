@@ -1,6 +1,7 @@
 """Assistente de Instagram — webhooks oficiais da Meta + painel web."""
 
 import asyncio
+import random
 import logging
 import secrets
 from contextlib import asynccontextmanager
@@ -18,7 +19,7 @@ from fastapi.responses import PlainTextResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 
-from . import engine, radar
+from . import engine, radar, robo
 from .config import settings
 from .db import db, get_config, init_db, set_config
 
@@ -39,15 +40,27 @@ async def _radar_loop():
             log.warning("Radar: %s", exc)
 
 
+async def _robo_loop():
+    await asyncio.sleep(60)
+    while True:
+        try:
+            msg = await asyncio.to_thread(robo.ciclo)
+            log.info("Robô: %s", msg)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Robô: %s", exc)
+        base = settings.robo_ciclo_min * 60
+        await asyncio.sleep(random.uniform(base * 0.7, base * 1.3))
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    task = (
-        asyncio.create_task(_radar_loop()) if settings.radar_interval_min > 0 else None
-    )
+    tasks = [asyncio.create_task(_robo_loop())]
+    if settings.radar_interval_min > 0 and settings.access_token:
+        tasks.append(asyncio.create_task(_radar_loop()))
     yield
-    if task:
-        task.cancel()
+    for t in tasks:
+        t.cancel()
 
 
 app = FastAPI(
@@ -194,6 +207,7 @@ def configuracoes(request: Request, _=Depends(admin)):
 async def salvar_config(request: Request, _=Depends(admin)):
     form = await request.form()
     keys = [
+        "perfil_voz",
         "modo_comentario",
         "modo_direct",
         "resposta_padrao_comentario",
@@ -268,3 +282,78 @@ def marcar_item(iid: int, status: str, _=Depends(admin)):
     with db() as c:
         c.execute("UPDATE radar_items SET status=? WHERE id=?", (status, iid))
     return back("/radar")
+
+
+# ---------------------------------------------------------------- robô
+ROBO_CAMPOS = [
+    "limite_curtidas_dia",
+    "limite_comentarios_dia",
+    "limite_perfis_ciclo",
+    "curtidas_por_perfil",
+    "chance_comentar",
+    "modo_comentar_publico",
+    "hora_inicio",
+    "hora_fim",
+    "intervalo_min_s",
+    "intervalo_max_s",
+    "seguidores_por_concorrente",
+    "modelos_comentario",
+]
+
+
+@app.get("/robo")
+def robo_view(request: Request, _=Depends(admin)):
+    ctx = robo.resumo()
+    ctx["s"] = settings
+    return templates.TemplateResponse(request, "robo.html", ctx)
+
+
+@app.post("/robo/config")
+async def robo_config(request: Request, _=Depends(admin)):
+    form = await request.form()
+    values = {k: str(form.get(k, "")).strip() for k in ROBO_CAMPOS}
+    values["robo_ativo"] = "1" if form.get("robo_ativo") else "0"
+    # travas de segurança contra limites agressivos
+    values["limite_curtidas_dia"] = str(
+        min(int(values["limite_curtidas_dia"] or 0), 150)
+    )
+    values["limite_comentarios_dia"] = str(
+        min(int(values["limite_comentarios_dia"] or 0), 30)
+    )
+    values["intervalo_min_s"] = str(max(int(values["intervalo_min_s"] or 0), 20))
+    values["intervalo_max_s"] = str(
+        max(int(values["intervalo_max_s"] or 0), int(values["intervalo_min_s"]) + 10)
+    )
+    set_config(values)
+    return back("/robo")
+
+
+@app.post("/robo/conectar")
+async def robo_conectar(codigo: str = Form(""), _=Depends(admin)):
+    try:
+        await asyncio.to_thread(robo.cliente, codigo.strip())
+        set_config({"robo_pausado_ate": ""})
+    except Exception as exc:  # noqa: BLE001
+        robo.tratar_erro(exc)
+        robo.registrar("LOGIN", f"Falha no login: {type(exc).__name__}: {exc}")
+    return back("/robo")
+
+
+@app.post("/robo/ciclo")
+def robo_ciclo(tasks: BackgroundTasks, _=Depends(admin)):
+    tasks.add_task(robo.ciclo, True)
+    robo.registrar("CICLO", "Ciclo manual iniciado")
+    return back("/robo")
+
+
+@app.post("/robo/pausar")
+def robo_pausar(_=Depends(admin)):
+    robo.pausar(24, "pausa manual")
+    return back("/robo")
+
+
+@app.post("/robo/retomar")
+def robo_retomar(_=Depends(admin)):
+    set_config({"robo_pausado_ate": ""})
+    robo.registrar("PAUSA", "Pausa removida manualmente")
+    return back("/robo")
