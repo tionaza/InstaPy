@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% block content %}
+<div class="card warn"><b>Modo não oficial.</b> Este robô entra na sua conta como se fosse o app e viola os Termos de Uso do Instagram. A conta pode sofrer bloqueios de ação, pedidos de verificação ou desativação. Use uma conta que você aceite arriscar, comece com limites baixos e aumente aos poucos. Lembre também das regras da OAB sobre publicidade e captação (Provimento 205/2021).</div>
+
+<div class="card row">
+  <div><b>{{ cfg.robo_status }}</b><div class="mut">conexão</div></div>
+  <div><b>{% if cfg.robo_ativo=='1' %}ligado{% else %}desligado{% endif %}</b><div class="mut">{% if pausado_ate %}pausado até {{ pausado_ate.strftime('%d/%m %H:%M') }}{% elif not em_horario %}fora do horário{% else %}em horário{% endif %}</div></div>
+  <div><b>{{ curtidas_hoje }}/{{ cfg.limite_curtidas_dia }}</b><div class="mut">curtidas hoje</div></div>
+  <div><b>{{ comentarios_hoje }}/{{ cfg.limite_comentarios_dia }}</b><div class="mut">comentários hoje</div></div>
+  <div><b>{{ publico.novo or 0 }}</b><div class="mut">perfis na fila ({{ publico.feito or 0 }} feitos)</div></div>
+</div>
+
+<div class="card">
+  <form method="post" action="/robo/conectar" class="row">
+    <input name="codigo" placeholder="Código 2FA/SMS (se o Instagram pedir)">
+    <button>Conectar conta</button>
+  </form>
+  <div class="row" style="margin-top:8px">
+    <form method="post" action="/robo/ciclo"><button class="sec">Rodar um ciclo agora</button></form>
+    {% if pausado_ate %}<form method="post" action="/robo/retomar"><button class="sec">Remover pausa</button></form>
+    {% else %}<form method="post" action="/robo/pausar"><button class="sec">Pausar 24h</button></form>{% endif %}
+  </div>
+  <p class="mut">Se o Instagram pedir verificação, abra o app no celular, toque em "Fui eu" e clique em Conectar. Quando o Instagram bloquear uma ação, o robô pausa sozinho por 24h. Não remova a pausa antes disso.</p>
+</div>
+
+<form class="card" method="post" action="/robo/config">
+  <label><input type="checkbox" name="robo_ativo" style="width:auto" {% if cfg.robo_ativo=='1' %}checked{% endif %}> <b>Robô ligado</b> (roda a cada ~{{ s.robo_ciclo_min }} min)</label><br><br>
+  <div class="row">
+    <label>Curtidas por dia (máx. 150)<input name="limite_curtidas_dia" type="number" value="{{ cfg.limite_curtidas_dia }}"></label>
+    <label>Comentários por dia (máx. 30)<input name="limite_comentarios_dia" type="number" value="{{ cfg.limite_comentarios_dia }}"></label>
+    <label>Perfis por ciclo<input name="limite_perfis_ciclo" type="number" value="{{ cfg.limite_perfis_ciclo }}"></label>
+    <label>Curtidas por perfil<input name="curtidas_por_perfil" type="number" value="{{ cfg.curtidas_por_perfil }}"></label>
+  </div>
+  <div class="row">
+    <label>Chance de comentar (%)<input name="chance_comentar" type="number" value="{{ cfg.chance_comentar }}"></label>
+    <label>Seguidores coletados por concorrente<input name="seguidores_por_concorrente" type="number" value="{{ cfg.seguidores_por_concorrente }}"></label>
+    <label>Início (hora)<input name="hora_inicio" type="number" value="{{ cfg.hora_inicio }}"></label>
+    <label>Fim (hora)<input name="hora_fim" type="number" value="{{ cfg.hora_fim }}"></label>
+  </div>
+  <div class="row">
+    <label>Intervalo mínimo entre ações (s)<input name="intervalo_min_s" type="number" value="{{ cfg.intervalo_min_s }}"></label>
+    <label>Intervalo máximo (s)<input name="intervalo_max_s" type="number" value="{{ cfg.intervalo_max_s }}"></label>
+    <label>Comentários no público-alvo
+      <select name="modo_comentar_publico">
+      {% for v, t in [('aprovacao','Pedir minha aprovação'),('automatico','Comentar automaticamente'),('desligado','Só curtir')] %}
+      <option value="{{ v }}" {% if cfg.modo_comentar_publico==v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></label>
+  </div>
+  <label><b>Modelos de comentário</b> (um por linha; usados quando a IA está desligada)</label>
+  <textarea name="modelos_comentario" style="min-height:100px">{{ cfg.modelos_comentario }}</textarea>
+  <p class="mut">Respostas a comentários nos seus posts e a Directs recebidos seguem os modos e regras de <a href="/configuracoes">Configurações</a> e <a href="/regras">Regras</a>. Por segurança o robô não manda Direct para quem nunca falou com você.</p>
+  <button>Salvar</button>
+</form>
+
+<h3>Atividade</h3>
+<div class="card"><table>
+{% for l in logs %}<tr><td class="mut" style="white-space:nowrap">{{ l.created_at }}</td><td>{{ l.nivel }}</td><td>{{ l.mensagem }}</td></tr>
+{% else %}<tr><td class="mut">Sem atividade ainda.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

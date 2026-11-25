@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistente Instagram</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mut:#667085;--ac:#7a2e8e;--ok:#1f8a4c;--err:#b42318;--bd:#e4e7ec}
+@media (prefers-color-scheme:dark){:root{--bg:#12141a;--card:#1b1e26;--tx:#e8eaf0;--mut:#98a2b3;--bd:#2c313c}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:var(--ac);color:#fff;padding:12px 16px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+header a{color:#fff;text-decoration:none;opacity:.9}header b{margin-right:auto}
+main{max-width:1000px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+.mut{color:var(--mut);font-size:13px}.warn{background:#fff4e5;color:#7a4a00;border-color:#f5c27a}
+@media (prefers-color-scheme:dark){.warn{background:#3a2a10;color:#ffd79a}}
+textarea,input,select{width:100%;padding:8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:70px}button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font:inherit}
+button.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1 1 180px}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}
+.enviado,.simulado{color:var(--ok)}.erro{color:var(--err)}
+table{width:100%;border-collapse:collapse}td,th{padding:6px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+</style>
+</head>
+<body>
+<header><b>Assistente Instagram</b>
+<a href="/">Fila e histórico</a><a href="/robo">Robô</a><a href="/regras">Regras</a><a href="/radar">Público-alvo</a><a href="/configuracoes">Configurações</a></header>
+<main>
+{% if s.dry_run %}<div class="card warn"><b>Modo simulação ativo (DRY_RUN=true).</b> Nada é enviado ao Instagram; as ações aparecem como "simulado". Altere no .env quando estiver tudo testado.</div>{% endif %}
+{% block content %}{% endblock %}
+</main>
+</body></html>

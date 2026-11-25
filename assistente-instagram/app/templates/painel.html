@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block content %}
+<div class="card row">
+  <div><b>{{ pendentes|length }}</b><div class="mut">aguardando aprovação</div></div>
+  <div><b>{{ (totais.enviado or 0) + (totais.simulado or 0) }}</b><div class="mut">enviadas/simuladas</div></div>
+  <div><b>{{ totais.erro or 0 }}</b><div class="mut">com erro</div></div>
+</div>
+<h3>Aguardando aprovação</h3>
+{% for a in pendentes %}
+<div class="card">
+  <div class="mut">{{ a.kind.replace('_',' ') }} · {{ '@' ~ a.username if a.username else a.target_id }} · origem: {{ a.source }} · {{ a.created_at }}</div>
+  <p><i>“{{ a.original }}”</i></p>
+  <form method="post" action="/acoes/{{ a.id }}/aprovar">
+    <textarea name="text">{{ a.text }}</textarea>
+    <div class="row" style="margin-top:8px"><button>Aprovar e enviar</button>
+    <button class="sec" formaction="/acoes/{{ a.id }}/rejeitar">Descartar</button></div>
+  </form>
+</div>
+{% else %}<p class="mut">Nada pendente.</p>{% endfor %}
+<h3>Histórico</h3>
+<div class="card"><table>
+<tr><th>Quando</th><th>Tipo</th><th>Mensagem recebida</th><th>Resposta</th><th>Status</th></tr>
+{% for a in historico %}<tr><td class="mut">{{ a.done_at or a.created_at }}</td><td>{{ a.kind.replace('_',' ') }}</td>
+<td>{{ a.original }}</td><td>{{ a.text }}</td><td class="{{ a.status }}">{{ a.status }}{% if a.error %}<div class="mut">{{ a.error }}</div>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="mut">Sem histórico ainda.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}
