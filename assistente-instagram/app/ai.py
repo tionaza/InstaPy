@@ -1,4 +1,5 @@
 """Sugestões de resposta com Claude (opcional). Sem chave, retorna None."""
+
 import logging
 
 import httpx
@@ -33,7 +34,10 @@ def suggest(context: str, kind: str, text: str) -> str | None:
         )
         r.raise_for_status()
         parts = r.json().get("content", [])
-        return "".join(p.get("text", "") for p in parts if p.get("type") == "text").strip() or None
+        return (
+            "".join(p.get("text", "") for p in parts if p.get("type") == "text").strip()
+            or None
+        )
     except Exception as exc:  # noqa: BLE001
         log.warning("Falha ao gerar sugestão com IA: %s", exc)
         return None

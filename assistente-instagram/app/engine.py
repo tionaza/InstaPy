@@ -1,4 +1,5 @@
 """Regras de resposta, fila de aprovação e envio."""
+
 import hashlib
 import hmac
 import logging
@@ -85,7 +86,9 @@ def execute(action_id: int) -> str:
     return status
 
 
-def _queue(event_id: int, kind: str, target: str, text: str, source: str, mode: str) -> None:
+def _queue(
+    event_id: int, kind: str, target: str, text: str, source: str, mode: str
+) -> None:
     with db() as c:
         cur = c.execute(
             "INSERT INTO actions(event_id, kind, target_id, text, source) VALUES (?,?,?,?,?)",
@@ -98,11 +101,14 @@ def _queue(event_id: int, kind: str, target: str, text: str, source: str, mode: 
 
 def _recently_answered(target: str, hours: int = 12) -> bool:
     with db() as c:
-        return c.execute(
-            "SELECT 1 FROM actions WHERE kind='responder_direct' AND target_id=? "
-            "AND created_at >= datetime('now', ?)",
-            (target, f"-{hours} hours"),
-        ).fetchone() is not None
+        return (
+            c.execute(
+                "SELECT 1 FROM actions WHERE kind='responder_direct' AND target_id=? "
+                "AND created_at >= datetime('now', ?)",
+                (target, f"-{hours} hours"),
+            ).fetchone()
+            is not None
+        )
 
 
 def _store_event(kind, ext_id, sender, username, media, text) -> int | None:
@@ -129,8 +135,14 @@ def handle_webhook(payload: dict) -> int:
             sender = v.get("from", {})
             if sender.get("id") == settings.ig_user_id:
                 continue  # comentário da própria conta
-            ev = _store_event("comentario", v.get("id"), sender.get("id"), sender.get("username"),
-                              v.get("media", {}).get("id"), v.get("text", ""))
+            ev = _store_event(
+                "comentario",
+                v.get("id"),
+                sender.get("id"),
+                sender.get("username"),
+                v.get("media", {}).get("id"),
+                v.get("text", ""),
+            )
             if not ev:
                 continue
             new += 1
@@ -140,14 +152,22 @@ def handle_webhook(payload: dict) -> int:
             text, src = build_reply("comentario", v.get("text", ""))
             _queue(ev, "responder_comentario", v["id"], text, src, mode)
             if cfg.get("direct_privado_em_comentario") == "1":
-                _queue(ev, "direct_privado", v["id"], cfg["resposta_padrao_direct"], "padrao",
-                       cfg.get("modo_direct", "aprovacao"))
+                _queue(
+                    ev,
+                    "direct_privado",
+                    v["id"],
+                    cfg["resposta_padrao_direct"],
+                    "padrao",
+                    cfg.get("modo_direct", "aprovacao"),
+                )
         for m in entry.get("messaging", []):
             msg = m.get("message") or {}
             if not msg or msg.get("is_echo"):
                 continue
             sid = m.get("sender", {}).get("id")
-            ev = _store_event("direct", msg.get("mid"), sid, None, None, msg.get("text", ""))
+            ev = _store_event(
+                "direct", msg.get("mid"), sid, None, None, msg.get("text", "")
+            )
             if not ev:
                 continue
             new += 1

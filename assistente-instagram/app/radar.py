@@ -3,6 +3,7 @@
 Não curte nem comenta sozinho. Gera uma lista de publicações relevantes com
 sugestão de comentário para VOCÊ interagir manualmente pelo app do Instagram.
 """
+
 import logging
 
 from . import ai, graph
@@ -29,20 +30,32 @@ def _save_item(source_id: int, m: dict) -> bool:
         cur = c.execute(
             "INSERT OR IGNORE INTO radar_items(source_id, media_id, permalink, caption, like_count, "
             "comments_count, timestamp) VALUES (?,?,?,?,?,?,?)",
-            (source_id, m.get("id"), m.get("permalink"), (m.get("caption") or "")[:1000],
-             m.get("like_count"), m.get("comments_count"), m.get("timestamp")),
+            (
+                source_id,
+                m.get("id"),
+                m.get("permalink"),
+                (m.get("caption") or "")[:1000],
+                m.get("like_count"),
+                m.get("comments_count"),
+                m.get("timestamp"),
+            ),
         )
         if cur.rowcount:
             sug = _suggestion(m.get("caption", ""))
             if sug:
-                c.execute("UPDATE radar_items SET suggestion=? WHERE id=?", (sug, cur.lastrowid))
+                c.execute(
+                    "UPDATE radar_items SET suggestion=? WHERE id=?",
+                    (sug, cur.lastrowid),
+                )
             return True
     return False
 
 
 def run_once() -> dict:
     with db() as c:
-        sources = [dict(r) for r in c.execute("SELECT * FROM radar_sources WHERE active=1")]
+        sources = [
+            dict(r) for r in c.execute("SELECT * FROM radar_sources WHERE active=1")
+        ]
     stats = {"novos": 0, "erros": []}
     for s in sources:
         try:
@@ -58,8 +71,13 @@ def run_once() -> dict:
                         c.execute(
                             "INSERT INTO competitor_stats(username, followers_count, media_count, "
                             "avg_likes, avg_comments) VALUES (?,?,?,?,?)",
-                            (s["value"], snap.get("followers_count"), snap.get("media_count"),
-                             sum(likes) / len(likes), sum(comms) / len(comms)),
+                            (
+                                s["value"],
+                                snap.get("followers_count"),
+                                snap.get("media_count"),
+                                sum(likes) / len(likes),
+                                sum(comms) / len(comms),
+                            ),
                         )
             for m in media:
                 stats["novos"] += _save_item(s["id"], m)

@@ -6,6 +6,7 @@ Só usa endpoints permitidos pela Meta:
 - enviar resposta privada (Direct) a quem comentou na sua publicação;
 - buscar publicações públicas por hashtag e métricas públicas de perfis comerciais.
 """
+
 import logging
 
 import httpx
@@ -42,7 +43,10 @@ def send_direct(recipient_igsid: str, message: str) -> dict:
     return _request(
         "POST",
         f"{settings.page_id}/messages",
-        json={"recipient": {"id": recipient_igsid}, "message": {"text": message}},
+        json={
+            "recipient": {"id": recipient_igsid},
+            "message": {"text": message},
+        },
     )
 
 
@@ -51,13 +55,20 @@ def private_reply_to_comment(comment_id: str, message: str) -> dict:
     return _request(
         "POST",
         f"{settings.page_id}/messages",
-        json={"recipient": {"comment_id": comment_id}, "message": {"text": message}},
+        json={
+            "recipient": {"comment_id": comment_id},
+            "message": {"text": message},
+        },
     )
 
 
 def hashtag_recent_media(tag: str, limit: int = 25) -> list[dict]:
     """Limite da Meta: 30 hashtags diferentes a cada 7 dias por conta."""
-    found = _request("GET", "ig_hashtag_search", params={"user_id": settings.ig_user_id, "q": tag})
+    found = _request(
+        "GET",
+        "ig_hashtag_search",
+        params={"user_id": settings.ig_user_id, "q": tag},
+    )
     if not found.get("data"):
         return []
     hid = found["data"][0]["id"]

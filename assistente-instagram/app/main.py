@@ -1,11 +1,19 @@
 """Assistente de Instagram — webhooks oficiais da Meta + painel web."""
+
 import asyncio
 import logging
 import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, Depends, FastAPI, Form, HTTPException, Request
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    Form,
+    HTTPException,
+    Request,
+)
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
@@ -14,7 +22,9 @@ from . import engine, radar
 from .config import settings
 from .db import db, get_config, init_db, set_config
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s"
+)
 log = logging.getLogger("app")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 security = HTTPBasic()
@@ -32,23 +42,32 @@ async def _radar_loop():
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    task = asyncio.create_task(_radar_loop()) if settings.radar_interval_min > 0 else None
+    task = (
+        asyncio.create_task(_radar_loop()) if settings.radar_interval_min > 0 else None
+    )
     yield
     if task:
         task.cancel()
 
 
-app = FastAPI(title="Assistente Instagram", lifespan=lifespan, docs_url=None, redoc_url=None)
+app = FastAPI(
+    title="Assistente Instagram",
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+)
 
 
 def admin(creds: HTTPBasicCredentials = Depends(security)) -> str:
     if not settings.admin_password:
         raise HTTPException(503, "Defina ADMIN_PASSWORD no arquivo .env")
-    ok = secrets.compare_digest(creds.username, settings.admin_user) and secrets.compare_digest(
-        creds.password, settings.admin_password
-    )
+    ok = secrets.compare_digest(
+        creds.username, settings.admin_user
+    ) and secrets.compare_digest(creds.password, settings.admin_password)
     if not ok:
-        raise HTTPException(401, "Não autorizado", headers={"WWW-Authenticate": "Basic"})
+        raise HTTPException(
+            401, "Não autorizado", headers={"WWW-Authenticate": "Basic"}
+        )
     return creds.username
 
 
@@ -65,8 +84,10 @@ def health():
 @app.get("/webhook", response_class=PlainTextResponse)
 def webhook_verify(request: Request):
     q = request.query_params
-    if q.get("hub.mode") == "subscribe" and settings.verify_token and secrets.compare_digest(
-        q.get("hub.verify_token", ""), settings.verify_token
+    if (
+        q.get("hub.mode") == "subscribe"
+        and settings.verify_token
+        and secrets.compare_digest(q.get("hub.verify_token", ""), settings.verify_token)
     ):
         return q.get("hub.challenge", "")
     raise HTTPException(403, "Token inválido")
@@ -98,15 +119,25 @@ def painel(request: Request, _=Depends(admin)):
             r["status"]: r["n"]
             for r in c.execute("SELECT status, COUNT(*) n FROM actions GROUP BY status")
         }
-    return templates.TemplateResponse(request, "painel.html", {
-        "pendentes": pendentes, "historico": historico, "totais": totais, "s": settings,
-    })
+    return templates.TemplateResponse(
+        request,
+        "painel.html",
+        {
+            "pendentes": pendentes,
+            "historico": historico,
+            "totais": totais,
+            "s": settings,
+        },
+    )
 
 
 @app.post("/acoes/{aid}/aprovar")
 def aprovar(aid: int, text: str = Form(...), _=Depends(admin)):
     with db() as c:
-        c.execute("UPDATE actions SET text=? WHERE id=? AND status='pendente'", (text.strip(), aid))
+        c.execute(
+            "UPDATE actions SET text=? WHERE id=? AND status='pendente'",
+            (text.strip(), aid),
+        )
     engine.execute(aid)
     return back("/")
 
@@ -114,7 +145,10 @@ def aprovar(aid: int, text: str = Form(...), _=Depends(admin)):
 @app.post("/acoes/{aid}/rejeitar")
 def rejeitar(aid: int, _=Depends(admin)):
     with db() as c:
-        c.execute("UPDATE actions SET status='rejeitado', done_at=CURRENT_TIMESTAMP WHERE id=?", (aid,))
+        c.execute(
+            "UPDATE actions SET status='rejeitado', done_at=CURRENT_TIMESTAMP WHERE id=?",
+            (aid,),
+        )
     return back("/")
 
 
@@ -122,15 +156,23 @@ def rejeitar(aid: int, _=Depends(admin)):
 def regras(request: Request, _=Depends(admin)):
     with db() as c:
         rows = c.execute("SELECT * FROM rules ORDER BY id").fetchall()
-    return templates.TemplateResponse(request, "regras.html", {"regras": rows, "s": settings})
+    return templates.TemplateResponse(
+        request, "regras.html", {"regras": rows, "s": settings}
+    )
 
 
 @app.post("/regras")
-def nova_regra(channel: str = Form(...), keywords: str = Form(...), reply: str = Form(...),
-               _=Depends(admin)):
+def nova_regra(
+    channel: str = Form(...),
+    keywords: str = Form(...),
+    reply: str = Form(...),
+    _=Depends(admin),
+):
     with db() as c:
-        c.execute("INSERT INTO rules(channel, keywords, reply) VALUES (?,?,?)",
-                  (channel, keywords.strip(), reply.strip()))
+        c.execute(
+            "INSERT INTO rules(channel, keywords, reply) VALUES (?,?,?)",
+            (channel, keywords.strip(), reply.strip()),
+        )
     return back("/regras")
 
 
@@ -143,17 +185,26 @@ def excluir_regra(rid: int, _=Depends(admin)):
 
 @app.get("/configuracoes")
 def configuracoes(request: Request, _=Depends(admin)):
-    return templates.TemplateResponse(request, "config.html", {"cfg": get_config(), "s": settings})
+    return templates.TemplateResponse(
+        request, "config.html", {"cfg": get_config(), "s": settings}
+    )
 
 
 @app.post("/configuracoes")
 async def salvar_config(request: Request, _=Depends(admin)):
     form = await request.form()
-    keys = ["modo_comentario", "modo_direct", "resposta_padrao_comentario",
-            "resposta_padrao_direct", "contexto_ia"]
+    keys = [
+        "modo_comentario",
+        "modo_direct",
+        "resposta_padrao_comentario",
+        "resposta_padrao_direct",
+        "contexto_ia",
+    ]
     values = {k: str(form.get(k, "")).strip() for k in keys}
     values["usar_ia"] = "1" if form.get("usar_ia") else "0"
-    values["direct_privado_em_comentario"] = "1" if form.get("direct_privado_em_comentario") else "0"
+    values["direct_privado_em_comentario"] = (
+        "1" if form.get("direct_privado_em_comentario") else "0"
+    )
     set_config(values)
     return back("/configuracoes")
 
@@ -161,7 +212,9 @@ async def salvar_config(request: Request, _=Depends(admin)):
 @app.get("/radar")
 def radar_view(request: Request, _=Depends(admin)):
     with db() as c:
-        fontes = c.execute("SELECT * FROM radar_sources ORDER BY kind, value").fetchall()
+        fontes = c.execute(
+            "SELECT * FROM radar_sources ORDER BY kind, value"
+        ).fetchall()
         itens = c.execute(
             "SELECT i.*, s.value AS fonte FROM radar_items i JOIN radar_sources s ON s.id=i.source_id "
             "WHERE i.status='novo' ORDER BY i.id DESC LIMIT 60"
@@ -170,9 +223,16 @@ def radar_view(request: Request, _=Depends(admin)):
             "SELECT * FROM competitor_stats WHERE id IN "
             "(SELECT MAX(id) FROM competitor_stats GROUP BY username) ORDER BY username"
         ).fetchall()
-    return templates.TemplateResponse(request, "radar.html", {
-        "fontes": fontes, "itens": itens, "concorrentes": concorrentes, "s": settings,
-    })
+    return templates.TemplateResponse(
+        request,
+        "radar.html",
+        {
+            "fontes": fontes,
+            "itens": itens,
+            "concorrentes": concorrentes,
+            "s": settings,
+        },
+    )
 
 
 @app.post("/radar/fontes")
@@ -180,7 +240,10 @@ def nova_fonte(kind: str = Form(...), value: str = Form(...), _=Depends(admin)):
     value = value.strip().lstrip("#@").lower()
     if value:
         with db() as c:
-            c.execute("INSERT OR IGNORE INTO radar_sources(kind, value) VALUES (?,?)", (kind, value))
+            c.execute(
+                "INSERT OR IGNORE INTO radar_sources(kind, value) VALUES (?,?)",
+                (kind, value),
+            )
     return back("/radar")
 
 

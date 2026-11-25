@@ -1,9 +1,16 @@
 """Configuração lida das variáveis de ambiente (arquivo .env)."""
+
 import os
 
 
 def _bool(name: str, default: bool) -> bool:
-    return os.getenv(name, str(default)).strip().lower() in ("1", "true", "sim", "yes", "on")
+    return os.getenv(name, str(default)).strip().lower() in (
+        "1",
+        "true",
+        "sim",
+        "yes",
+        "on",
+    )
 
 
 class Settings:

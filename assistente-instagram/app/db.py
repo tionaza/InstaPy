@@ -1,4 +1,5 @@
 """Banco SQLite simples (arquivo em volume Docker)."""
+
 import os
 import sqlite3
 from contextlib import contextmanager
@@ -57,7 +58,7 @@ CREATE TABLE IF NOT EXISTS competitor_stats (
 """
 
 DEFAULT_CONFIG = {
-    "modo_comentario": "aprovacao",   # automatico | aprovacao | desligado
+    "modo_comentario": "aprovacao",  # automatico | aprovacao | desligado
     "modo_direct": "aprovacao",
     "usar_ia": "0",
     "resposta_padrao_comentario": "Obrigado pelo comentário! Enviamos mais informações no seu Direct. 🙂",
@@ -97,15 +98,23 @@ def init_db() -> None:
     with db() as c:
         c.executescript(SCHEMA)
         for k, v in DEFAULT_CONFIG.items():
-            c.execute("INSERT OR IGNORE INTO config(key, value) VALUES (?, ?)", (k, v))
+            c.execute(
+                "INSERT OR IGNORE INTO config(key, value) VALUES (?, ?)",
+                (k, v),
+            )
 
 
 def get_config() -> dict:
     with db() as c:
-        return {r["key"]: r["value"] for r in c.execute("SELECT key, value FROM config")}
+        return {
+            r["key"]: r["value"] for r in c.execute("SELECT key, value FROM config")
+        }
 
 
 def set_config(values: dict) -> None:
     with db() as c:
         for k, v in values.items():
-            c.execute("INSERT OR REPLACE INTO config(key, value) VALUES (?, ?)", (k, v))
+            c.execute(
+                "INSERT OR REPLACE INTO config(key, value) VALUES (?, ?)",
+                (k, v),
+            )
