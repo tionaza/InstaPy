@@ -35,7 +35,7 @@ if [ ! -f .env ]; then
   echo
   read -rp "Usuário do Instagram (sem @): " IGU
   read -rsp "Senha do Instagram (não aparece ao digitar): " IGP; echo
-  SENHA_PAINEL=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 14)
+  SENHA_PAINEL=$(head -c 300 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | cut -c1-14)
   cp .env.example .env
   sed -i "s/^HOST_PORT=.*/HOST_PORT=$PORTA/" .env
   sed -i "s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=$SENHA_PAINEL/" .env
