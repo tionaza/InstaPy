@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block content %}
+<h3>Regras por palavra-chave</h3>
+<p class="mut">Se a mensagem contiver qualquer palavra da lista (sem diferenciar acentos e maiúsculas), a resposta da regra é usada. Sem regra, usa-se a IA (se ligada) ou a resposta padrão.</p>
+<form class="card" method="post" action="/regras">
+  <div class="row">
+    <select name="channel"><option value="ambos">Comentários e Direct</option><option value="comentario">Só comentários</option><option value="direct">Só Direct</option></select>
+    <input name="keywords" placeholder="ex.: aposentadoria, inss, benefício" required>
+  </div>
+  <textarea name="reply" style="margin-top:8px" placeholder="Resposta" required></textarea>
+  <button style="margin-top:8px">Adicionar regra</button>
+</form>
+{% for r in regras %}
+<div class="card"><div class="mut">{{ r.channel }} · palavras: {{ r.keywords }}</div><p>{{ r.reply }}</p>
+<form method="post" action="/regras/{{ r.id }}/excluir"><button class="sec">Excluir</button></form></div>
+{% else %}<p class="mut">Nenhuma regra cadastrada.</p>{% endfor %}
+{% endblock %}

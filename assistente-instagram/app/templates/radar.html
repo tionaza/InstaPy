@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block content %}
+<h3>Radar de público</h3>
+<p class="mut">Acompanha hashtags e perfis concorrentes pela API oficial. O sistema <b>não</b> curte nem comenta em perfis de terceiros: ele separa as publicações e sugere um comentário para você interagir manualmente pelo app, o que mantém a conta segura.</p>
+<form class="card row" method="post" action="/radar/fontes">
+  <select name="kind"><option value="hashtag">Hashtag</option><option value="concorrente">Perfil concorrente (comercial/criador)</option></select>
+  <input name="value" placeholder="ex.: direitoprevidenciario ou @perfil" required>
+  <button>Adicionar</button>
+</form>
+<div class="card">
+{% for f in fontes %}<form method="post" action="/radar/fontes/{{ f.id }}/excluir" style="display:inline">
+<span class="tag">{{ '#' if f.kind=='hashtag' else '@' }}{{ f.value }} <button class="sec" style="padding:0 6px">×</button></span></form>
+{% else %}<span class="mut">Nenhuma fonte.</span>{% endfor %}
+<form method="post" action="/radar/executar" style="margin-top:10px"><button class="sec">Buscar agora</button>
+<span class="mut">Automático a cada {{ s.radar_interval_min }} min. A Meta limita a 30 hashtags diferentes por semana.</span></form>
+</div>
+{% if concorrentes %}<h3>Concorrentes</h3><div class="card"><table>
+<tr><th>Perfil</th><th>Seguidores</th><th>Posts</th><th>Média curtidas</th><th>Média comentários</th><th>Atualizado</th></tr>
+{% for c in concorrentes %}<tr><td>@{{ c.username }}</td><td>{{ c.followers_count }}</td><td>{{ c.media_count }}</td>
+<td>{{ '%.0f'|format(c.avg_likes or 0) }}</td><td>{{ '%.1f'|format(c.avg_comments or 0) }}</td><td class="mut">{{ c.created_at }}</td></tr>{% endfor %}
+</table></div>{% endif %}
+<h3>Publicações para interagir</h3>
+{% for i in itens %}
+<div class="card"><div class="mut">{{ i.fonte }} · {{ i.like_count or 0 }} curtidas · {{ i.comments_count or 0 }} comentários · {{ i.timestamp }}</div>
+<p>{{ i.caption[:300] }}</p>
+{% if i.suggestion %}<p><b>Sugestão:</b> {{ i.suggestion }}</p>{% endif %}
+<div class="row"><a href="{{ i.permalink }}" target="_blank" rel="noopener"><button type="button">Abrir no Instagram</button></a>
+<form method="post" action="/radar/itens/{{ i.id }}/feito"><button class="sec">Já interagi</button></form>
+<form method="post" action="/radar/itens/{{ i.id }}/ignorado"><button class="sec">Ignorar</button></form></div></div>
+{% else %}<p class="mut">Nada novo. Adicione fontes e clique em "Buscar agora".</p>{% endfor %}
+{% endblock %}

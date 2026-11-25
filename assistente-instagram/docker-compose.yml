@@ -1,0 +1,28 @@
+# Projeto isolado: nome próprio, rede própria, volume próprio.
+# A porta fica presa ao 127.0.0.1 da VPS, então só o proxy reverso (Nginx/Traefik/Caddy)
+# acessa o sistema. Nada aqui interfere nas portas 80/443 da aplicação existente.
+name: assistente-instagram
+
+services:
+  app:
+    build: .
+    container_name: assistente-instagram
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:${HOST_PORT:-8090}:8000"
+    volumes:
+      - assistente_dados:/data
+    networks:
+      - assistente_net
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  assistente_dados:
+
+networks:
+  assistente_net:

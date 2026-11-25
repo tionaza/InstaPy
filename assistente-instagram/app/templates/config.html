@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block content %}
+<h3>Configurações</h3>
+<form class="card" method="post">
+  {% for key, label in [('modo_comentario','Respostas a comentários'),('modo_direct','Respostas no Direct')] %}
+  <label><b>{{ label }}</b></label>
+  <select name="{{ key }}">
+    {% for v, t in [('aprovacao','Pedir minha aprovação antes de enviar'),('automatico','Enviar automaticamente'),('desligado','Desligado')] %}
+    <option value="{{ v }}" {% if cfg[key]==v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select><br><br>{% endfor %}
+  <label><b>Resposta padrão para comentários</b></label>
+  <textarea name="resposta_padrao_comentario">{{ cfg.resposta_padrao_comentario }}</textarea><br><br>
+  <label><b>Resposta padrão no Direct</b></label>
+  <textarea name="resposta_padrao_direct">{{ cfg.resposta_padrao_direct }}</textarea><br><br>
+  <label><input type="checkbox" name="direct_privado_em_comentario" style="width:auto" {% if cfg.direct_privado_em_comentario=='1' %}checked{% endif %}>
+  Também enviar a resposta padrão do Direct para quem comentou nas minhas publicações</label><br><br>
+  <label><input type="checkbox" name="usar_ia" style="width:auto" {% if cfg.usar_ia=='1' %}checked{% endif %}>
+  Usar IA (Claude) quando nenhuma regra se aplicar {% if not s.anthropic_api_key %}<span class="mut">(defina ANTHROPIC_API_KEY no .env)</span>{% endif %}</label><br><br>
+  <label><b>Instruções para a IA</b></label>
+  <textarea name="contexto_ia" style="min-height:120px">{{ cfg.contexto_ia }}</textarea>
+  <p class="mut">Mantenha o tom informativo e sóbrio exigido pelo Provimento 205/2021 da OAB: sem promessa de resultado, sem preços, sem mercantilização.</p>
+  <button>Salvar</button>
+</form>
+<div class="card mut">Limite de envios automáticos: {{ s.max_auto_per_hour }}/hora (MAX_AUTO_PER_HOUR no .env). Acima disso, as respostas ficam aguardando aprovação.</div>
+{% endblock %}
